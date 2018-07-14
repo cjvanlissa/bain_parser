@@ -68,7 +68,7 @@ flip_inequality <- function(hyp){
 #' Constraint to equation
 #' 
 #' Formats a BAIN constraint as an equation that can be evaluated. Adds scalars
-#' to all parameters in the constraint, and adds a ..constant parameter to any
+#' to all parameters in the constraint, and adds a XXXconstant parameter to any
 #' constants. Also adds "*" and "+" operators where necessary for evaluation.
 #' @param hyp Character. A BAIN (in)equality constraint
 #' @return Character
@@ -82,12 +82,10 @@ flip_inequality <- function(hyp){
 #' constraint_to_equation("5+c=d")
 #' @keywords internal
 constraint_to_equation <- function(hyp){
-  hyp <- gsub("(^|(?<![\\*\\d]))([a-zA-Z][a-zA-Z0-9_]{0,})", "1\\2", hyp, perl = TRUE)
-  #hyp <- gsub("(^|(?<![\\*\\w]))([a-zA-Z])(?=[a-zA-Z0-9_+])", "1\\2", hyp, perl = TRUE)
-  hyp <- gsub("(^|(?<![+-]))([0-9\\.][0-9]{0,})", "+\\2", hyp, perl = TRUE)
-  #hyp <- gsub("(^|(?<!\\*\\w))([a-zA-Z][a-zA-Z0-9_]{0,})", "*\\2", hyp, perl = TRUE)
+  hyp <- gsub("(^|(?<![\\*\\d]))([a-zA-Z][a-zA-Z0-9_]{0,})", "1*\\2", hyp, perl = TRUE)
+  hyp <- gsub("(^|(?<![+-]))([-+]?[0-9]*\\.?[0-9]+)", "+\\2", hyp, perl = TRUE)
   hyp <- gsub("(\\d)(?=[a-zA-Z][a-zA-Z0-9_]{0,})", "\\1*", hyp, perl = TRUE)
-  gsub("(\\d)((?=[=<>+-])|$)", "\\1*..constant", hyp, perl = TRUE)
+  gsub("(\\d)((?=[=<>+-])|$)", "\\1*XXXconstant", hyp, perl = TRUE)
 }
 
 #' Order terms
@@ -125,12 +123,12 @@ order_terms <- function(hyp){
 #' @keywords internal
 constraint_to_row <- function(varnames, hyp){
   e <- new.env()
-  objects <- c(varnames, "..constant")
+  objects <- c(varnames, "XXXconstant")
   invisible(sapply(objects, assign, value = 0, envir = e))
   constraint_expression <- parse(text = substring(hyp, 1, nchar(hyp)-1))
-  e[["..constant"]] <- -1
+  e[["XXXconstant"]] <- -1
   equal_to <- eval(constraint_expression, envir = e)
-  e[["..constant"]] <- 0
+  e[["XXXconstant"]] <- 0
   
   c(sapply(varnames, function(x){
     e[[x]] <- 1
@@ -140,20 +138,11 @@ constraint_to_row <- function(varnames, hyp){
   }), equal_to)
 }
 
-# b.	Er moet een (zeer) korte manual bijkomen van wat de functie kan. De volgende elementen kunnen worden gebruikt:
-#   a>b
-# a=b
-# a>getal
-# a=getal
-# (a,b)>(b,c,d) pas het > toe tussen elk paar links en rechts
-# (a,b)>0 pas het ? toe op elk element links
-# Er kunnen meerdere elementen gecombineerd worden gescheiden door een , bijvoorbeeld a>b,c=d, etc.
-# Als je onderaan in de code kijkt krijg je een goede indruk van wat er mogelijk is.
-
 #' Create BAIN (in)equality constraint matrices
 #'
 #' Parses a character string describing a set of BAIN informative hypotheses,
-#' and returns BAIN (in)equality constraint matrices. See detalis for more information.
+#' and returns BAIN (in)equality constraint matrices. See Details for more
+#' information.
 #' @details Informative hypotheses specified as a character string should adhere
 #' to the following simple syntax:
 #' \itemize{
@@ -162,8 +151,8 @@ constraint_to_row <- function(varnames, hyp){
 #'   \item Each individual hypothesis consists of a (series of) (in)equality
 #'         constraint(s). Every single (in)equality constraint is of the form
 #'         "R1*mu1 + R2*mu2+... = r", where capital Rs refer to numeric scaling
-#'         constants, mus refer to the names of parameters in the model, and the
-#'         lower case r refers to a constant. Standard mathematical
+#'         constants, must refer to the names of parameters in the model, and
+#'         the lower case r refers to a constant. Standard mathematical
 #'         simplification rules apply; thus, "R1*mu1 = R2*mu2" is equivalent to
 #'         "R1*mu1 - R2*mu2 = 0".
 #'   \item Multiple unrelated constraints within one hypothesis can be chained
@@ -243,6 +232,21 @@ constraint_to_row <- function(varnames, hyp){
 #' 
 #' hyp <- "1/2*a>c"
 #' create_matrices(varnames, hyp)
+#' 
+#' varnames <- c("a", "b", "c")
+#' hyp <- "a < -2"
+#' create_matrices(varnames, hyp)
+#' hyp <- "-2 > a"
+#' create_matrices(varnames, hyp)
+#' 
+#' # HET - TEKEN VOOR DE C CONSTRAINT WORD IN DE UITVOER NIET NAAR EEN + OMGEZET
+#' varnames <- c("a","b","c","d","e","f")
+#' hyp <- "a>2; b=0; c< -0.5; d>e=f"
+#' create_matrices(varnames, hyp)
+#' 
+#' # -.5 WORD NIET BEGREPEN, -0.5 WEL
+#' hyp1 <- "a>2; b=0; c< -.5; d>e=f"
+#' create_matrices(varnames, hyp1)
 create_matrices <- function(object, hyp){
   varnames <- object
   if(is.null(varnames)) stop("Please input proper linear model object")
