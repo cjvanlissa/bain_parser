@@ -83,7 +83,7 @@ flip_inequality <- function(hyp){
 #' @keywords internal
 constraint_to_equation <- function(hyp){
   hyp <- gsub("(^|(?<![\\*\\d]))([a-zA-Z][a-zA-Z0-9_]{0,})", "1*\\2", hyp, perl = TRUE)
-  hyp <- gsub("(^|(?<![+-]))([-+]?[0-9]*\\.?[0-9]+)", "+\\2", hyp, perl = TRUE)
+  hyp <- gsub("(^|(?<![+-]))([0-9]*\\.?[0-9]+)", "+\\2", hyp, perl = TRUE)
   hyp <- gsub("(\\d)(?=[a-zA-Z][a-zA-Z0-9_]{0,})", "\\1*", hyp, perl = TRUE)
   gsub("(\\d)((?=[=<>+-])|$)", "\\1*XXXconstant", hyp, perl = TRUE)
 }
@@ -246,6 +246,13 @@ constraint_to_row <- function(varnames, hyp){
 #' 
 #' # -.5 WORD NIET BEGREPEN, -0.5 WEL
 #' hyp1 <- "a>2; b=0; c< -.5; d>e=f"
+#' create_matrices(varnames, hyp1)
+#' 
+#' varnames <- c("a","b","c","d","e","f")
+#' hyp <- "(a+a+a,c+c+c)>b+b"
+#' create_matrices(varnames, hyp)
+#' varnames <- c("a","b","c","d","e","f")
+#' hyp1 <- "a+a+b>b+b+a"
 #' create_matrices(varnames, hyp1)
 create_matrices <- function(object, hyp){
   varnames <- object
