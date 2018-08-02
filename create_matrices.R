@@ -82,9 +82,21 @@ flip_inequality <- function(hyp){
 #' constraint_to_equation("5+c=d")
 #' @keywords internal
 constraint_to_equation <- function(hyp){
+  # When the string starts with a word, OR when a word is not preceded by
+  # a number or *-sign, replace the "word" with "1*word"
   hyp <- gsub("(^|(?<![\\*\\d]))([a-zA-Z][a-zA-Z0-9_]{0,})", "1*\\2", hyp, perl = TRUE)
-  hyp <- gsub("(^|(?<![+-]))([0-9]*\\.?[0-9]+)", "+\\2", hyp, perl = TRUE)
+  # If a number starts with a period, add a leading zero
+  hyp <- gsub("(^|(?<!\\d))(\\.[0-9]+)", "0\\2", hyp, perl = TRUE)
+  # When the string starts with a floating point number, OR 
+  # when a floating point number is not preceded by + or -, add a +
+  hyp <- gsub("(^|(?<![+-]))([0-9]{1,}\\.[0-9]{0,})", "+\\2", hyp, perl = TRUE)
+  # When the string starts with an integer number, OR 
+  # when an integer number is not preceded by + or -, add a +
+  hyp <- gsub("(^|(?<![\\.0-9+-]))([0-9]{1,})(?!\\.)", "+\\2", hyp, perl = TRUE)
+  # When a number is directly followed by a word, insert a * sign
   hyp <- gsub("(\\d)(?=[a-zA-Z][a-zA-Z0-9_]{0,})", "\\1*", hyp, perl = TRUE)
+  # When a number is followed by =, >, <, +, or -, or is the last character of
+  # the string, add "*XXXconstant" to the number
   gsub("(\\d)((?=[=<>+-])|$)", "\\1*XXXconstant", hyp, perl = TRUE)
 }
 
